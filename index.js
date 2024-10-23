@@ -9,9 +9,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-const mongoDBURI = 'mongodb+srv://smartvalet:smartvalet@smartvalet.0br3z.mongodb.net/smartvalet?retryWrites=true&w=majority&appName=SmartValet';
+const mongoDBlink = 'mongodb+srv://smartvalet:smartvalet@smartvalet.0br3z.mongodb.net/smartvalet?retryWrites=true&w=majority&appName=SmartValet';
 // MongoDB connection
-mongoose.connect(mongoDBURI, {
+mongoose.connect(mongoDBlink, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
