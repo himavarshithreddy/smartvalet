@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Vehicle</title>
+    <link rel="stylesheet" href="/styles.css"> <!-- Link to the CSS file -->
+    <script>
+        async function fetchCarDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shortCode = urlParams.get('code'); // Extract code from the query string
+
+            try {
+                const response = await fetch(`/api/cars/${shortCode}`);
+                if (response.ok) {
+                    const car = await response.json();
+                    document.getElementById('carDetails').innerHTML = `
+                        <h2>Car Details</h2>
+                        <p><strong>Car Number:</strong> ${car.carNumber}</p>
+                        <p><strong>Car Brand:</strong> ${car.carBrand}</p>
+                        <p><strong>Key ID:</strong> ${car.keyId}</p>
+                        <p><strong>Phone Number:</strong> ${car.phoneNumber || 'Not provided'}</p>
+                    `;
+                    document.getElementById('requestButton').style.display = 'block';
+                } else {
+                    document.getElementById('carDetails').innerHTML = '<p>Car not found.</p>';
+                }
+            } catch (error) {
+                document.getElementById('carDetails').innerHTML = '<p>Error fetching car details.</p>';
+            }
+        }
+
+        async function requestVehicle() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shortCode = urlParams.get('code'); // Extract code from the query string
+
+            try {
+                const response = await fetch(`/api/request-vehicle/${shortCode}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const result = await response.json();
+                alert(result.message); // Show success message
+            } catch (error) {
+                alert('Error requesting the vehicle.');
+            }
+        }
+
+        window.onload = fetchCarDetails; // Fetch car details on page load
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Request Your Vehicle</h1>
+        <div id="carDetails">
+            <!-- Car details will be injected here -->
+        </div>
+        <button id="requestButton" style="display: none;" onclick="requestVehicle()">Request Vehicle</button>
+    </div>
+</body>
+</html>
