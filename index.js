@@ -53,7 +53,7 @@ app.post('/api/generate-link/:carId', async (req, res) => {
     const shortCode = shortid.generate();
     
     // Create the full URL for the car request
-    const baseUrl = process.env.BASE_URL || 'https://your-frontend-url.com';
+    const baseUrl = process.env.BASE_URL || 'https://smartvalet.vercel.app';
     const requestLink = `${baseUrl}/request?code=${shortCode}`;
 
     // Update the car document with the short link
