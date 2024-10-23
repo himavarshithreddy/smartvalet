@@ -6,7 +6,7 @@ app.use(express.json()); // To parse JSON bodies
 
 // MongoDB connection setup
 const { MongoClient } = require('mongodb');
-const client = new MongoClient('your-mongo-db-mongodb+srv://smartvalet:smartvalet@smartvalet.0br3z.mongodb.net/smartvalet?retryWrites=true&w=majority&appName=SmartValet'); // Add your MongoDB URI
+const client = new MongoClient('mongodb+srv://smartvalet:smartvalet@smartvalet.0br3z.mongodb.net/smartvalet?retryWrites=true&w=majority&appName=SmartValet'); // Add your MongoDB URI
 const db = client.db('smartvalet');
 const carsCollection = db.collection('cars');
 
