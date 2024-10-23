@@ -110,6 +110,9 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
 app.get('/request', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'request_vehicle.html'));
 });
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'home.html'));
+});
 
 
 // Health check endpoint
