@@ -24,7 +24,7 @@ app.post('/generate-link/:carId', async (req, res) => {
     );
 
     if (result.modifiedCount > 0) {
-      const link = `https://yourdomain.com/request/${requestToken}`;
+      const link = `https://smartvalet.vercel.app/request/${requestToken}`;
       res.status(200).json({ link });
     } else {
       res.status(404).json({ message: 'Car not found' });
