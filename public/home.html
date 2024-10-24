@@ -130,6 +130,7 @@
         function showMessage(message, type) {
             const messageDiv = document.getElementById('message');
             messageDiv.innerHTML = message;
+            alert(message);
             messageDiv.className = `message ${type}`; // Set the class based on type (success or error)
             messageDiv.style.display = 'block'; // Show the message
         }
