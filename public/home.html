@@ -1,11 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Smart Valet</title>
-    </head>
-    <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Valet</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #007bff;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s, transform 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        p {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
         <h1>Welcome to Smart Valet</h1>
-    </body>
+        <input type="text" id="vehicleNumberInput" placeholder="Enter Vehicle Number" />
+        <button onclick="requestVehicle()">Request Vehicle</button>
+        <p id="message" style="color: #dc3545;"></p>
+    </div>
+
+    <script>
+        async function requestVehicle() {
+            const vehicleNumber = document.getElementById('vehicleNumberInput').value;
+
+            if (!vehicleNumber) {
+                document.getElementById('message').innerText = 'Please enter a vehicle number.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/request-vehicle-by-number', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ carNumber: vehicleNumber }),
+                });
+                const result = await response.json();
+
+                document.getElementById('message').innerText = result.message; // Show success/error message
+                if (response.ok) {
+                    document.getElementById('vehicleNumberInput').value = ''; // Clear input after successful request
+                }
+            } catch (error) {
+                document.getElementById('message').innerText = 'Error requesting the vehicle.';
+            }
+        }
+    </script>
+</body>
 </html>
