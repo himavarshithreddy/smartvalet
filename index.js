@@ -113,6 +113,23 @@ app.get('/request', (req, res) => {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
+app.post('/api/request-vehicle-by-number', async (req, res) => {
+  try {
+    const { carNumber } = req.body;
+    const car = await Car.findOne({ carNumber: carNumber });
+
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found' });
+    }
+
+    // Update the car status to "requested"
+    await Car.findByIdAndUpdate(car._id, { isRequested: true });
+
+    res.json({ message: 'Your vehicle request has been submitted successfully!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error requesting the vehicle', error: error.message });
+  }
+});
 
 
 // Health check endpoint

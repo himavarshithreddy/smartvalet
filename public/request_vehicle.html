@@ -109,57 +109,95 @@ button:active {
 
 
     </style>
-    <script>
-        async function fetchCarDetails() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const shortCode = urlParams.get('code'); // Extract code from the query string
+   <script>
+    let isRequested = false; // To track if the vehicle has been requested
 
-            try {
-                const response = await fetch(`/api/cars/${shortCode}`);
-                if (response.ok) {
-                    const car = await response.json();
-                    document.getElementById('carDetails').innerHTML = `
-                        <h2>Car Details</h2>
-                        <p><strong>Car Number:</strong> ${car.carNumber}</p>
-                        <p><strong>Car Brand:</strong> ${car.carBrand}</p>
-                        <p><strong>Key ID:</strong> ${car.keyId}</p>
-                        <p><strong>Phone Number:</strong> ${car.phoneNumber || 'Not provided'}</p>
-                    `;
-                    document.getElementById('requestButton').style.display = 'block';
+    async function fetchCarDetails() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const shortCode = urlParams.get('code'); // Extract code from the query string
+
+        try {
+            const response = await fetch(`/api/cars/${shortCode}`);
+            if (response.ok) {
+                const car = await response.json();
+                document.getElementById('carDetails').innerHTML = `
+                    <h2>Car Details</h2>
+                    <p><strong>Car Number:</strong> ${car.carNumber}</p>
+                    <p><strong>Car Brand:</strong> ${car.carBrand}</p>
+                    <p><strong>Key ID:</strong> ${car.keyId}</p>
+                    <p><strong>Phone Number:</strong> ${car.phoneNumber || 'Not provided'}</p>
+                `;
+                if (car.isRequested) {
+                    document.getElementById('requestButton').innerText = 'Already Requested';
+                    document.getElementById('requestButton').disabled = true; // Disable button if already requested
+                    isRequested = true;
                 } else {
-                    document.getElementById('carDetails').innerHTML = '<p>Car not found.</p>';
+                    document.getElementById('requestButton').style.display = 'block'; // Show button if not requested
                 }
-            } catch (error) {
-                document.getElementById('carDetails').innerHTML = '<p>Error fetching car details.</p>';
+            } else {
+                document.getElementById('carDetails').innerHTML = '<p>Car not found.</p>';
             }
+        } catch (error) {
+            document.getElementById('carDetails').innerHTML = '<p>Error fetching car details.</p>';
+        }
+    }
+
+    async function requestVehicle() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const shortCode = urlParams.get('code'); // Extract code from the query string
+
+        try {
+            const response = await fetch(`/api/request-vehicle/${shortCode}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const result = await response.json();
+            alert(result.message); // Show success message
+            if (result.message === 'Your vehicle request has been submitted successfully!') {
+                document.getElementById('requestButton').innerText = 'Already Requested';
+                document.getElementById('requestButton').disabled = true; // Disable button after request
+                isRequested = true;
+            }
+        } catch (error) {
+            alert('Error requesting the vehicle.');
+        }
+    }
+
+    async function requestVehicleByNumber() {
+        const carNumber = document.getElementById('carNumberInput').value; // Get car number from input field
+
+        if (!carNumber) {
+            alert('Please enter a car number');
+            return;
         }
 
-        async function requestVehicle() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const shortCode = urlParams.get('code'); // Extract code from the query string
-
-            try {
-                const response = await fetch(`/api/request-vehicle/${shortCode}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                const result = await response.json();
-                alert(result.message); // Show success message
-            } catch (error) {
-                alert('Error requesting the vehicle.');
-            }
+        try {
+            const response = await fetch('/api/request-vehicle-by-number', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ carNumber }),
+            });
+            const result = await response.json();
+            alert(result.message);
+        } catch (error) {
+            alert('Error requesting the vehicle by number.');
         }
+    }
 
-        window.onload = fetchCarDetails; // Fetch car details on page load
-    </script>
+    window.onload = fetchCarDetails; // Fetch car details on page load
+</script>
 </head>
 <body>
-    <div class="container">
-        <h1>Request Your Vehicle</h1>
-        <div id="carDetails">
-            <!-- Car details will be injected here -->
-        </div>
-        <button id="requestButton" style="display: none;" onclick="requestVehicle()">Request Vehicle</button>
+<div class="container">
+    <h1>Request Your Vehicle</h1>
+    <div id="carDetails">
+        <!-- Car details will be injected here -->
     </div>
+    <button id="requestButton" style="display: none;" onclick="requestVehicle()">Request Vehicle</button>
+
+    <h2>Or Request by Car Number</h2>
+    <input type="text" id="carNumberInput" placeholder="Enter Car Number" />
+    <button onclick="requestVehicleByNumber()">Request Vehicle</button>
+</div>
 </body>
 </html>
