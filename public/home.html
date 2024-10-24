@@ -70,9 +70,24 @@
             transform: translateY(0);
         }
 
-        p {
+        .message {
             margin-top: 20px;
             font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none; /* Hidden by default */
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
     </style>
 </head>
@@ -81,7 +96,7 @@
         <h1>Welcome to Smart Valet</h1>
         <input type="text" id="vehicleNumberInput" placeholder="Enter Vehicle Number" />
         <button onclick="requestVehicle()">Request Vehicle</button>
-        <p id="message" style="color: #dc3545;"></p>
+        <div id="message" class="message"></div>
     </div>
 
     <script>
@@ -89,7 +104,7 @@
             const vehicleNumber = document.getElementById('vehicleNumberInput').value;
 
             if (!vehicleNumber) {
-                document.getElementById('message').innerText = 'Please enter a vehicle number.';
+                showMessage('Please enter a vehicle number.', 'error');
                 return;
             }
 
@@ -101,13 +116,22 @@
                 });
                 const result = await response.json();
 
-                document.getElementById('message').innerText = result.message; // Show success/error message
                 if (response.ok) {
+                    showMessage(`Your request for vehicle number <strong>${vehicleNumber}</strong> has been submitted successfully!`, 'success');
                     document.getElementById('vehicleNumberInput').value = ''; // Clear input after successful request
+                } else {
+                    showMessage(result.message || 'Error requesting the vehicle.', 'error');
                 }
             } catch (error) {
-                document.getElementById('message').innerText = 'Error requesting the vehicle.';
+                showMessage('Error requesting the vehicle.', 'error');
             }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = message;
+            messageDiv.className = `message ${type}`; // Set the class based on type (success or error)
+            messageDiv.style.display = 'block'; // Show the message
         }
     </script>
 </body>
