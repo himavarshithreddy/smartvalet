@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const shortid = require('shortid');
 const path = require('path');
+const WebSocket = require('ws');
 require('dotenv').config();
 
 const app = express();
@@ -34,7 +35,26 @@ const carSchema = new mongoose.Schema({
 });
 
 const Car = mongoose.model('Car', carSchema);
+// WebSocket setup
+const server = require('http').createServer(app);
+const wss = new WebSocket.Server({ server });
 
+wss.on('connection', (ws) => {
+  console.log('New client connected');
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
+  });
+});
+
+// Function to broadcast messages to all connected clients
+const broadcast = (data) => {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+};
 // Routes
 app.get('/api/cars', async (req, res) => {
   try {
@@ -99,6 +119,7 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
 
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
+    broadcast({ id: car._id, message: 'Vehicle requested', carNumber: car.carNumber });
 
     
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
@@ -124,6 +145,7 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
 
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
+    broadcast({ id: car._id, message: 'Vehicle requested', carNumber: car.carNumber });
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
