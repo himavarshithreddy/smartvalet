@@ -29,6 +29,10 @@ const server = app.listen(PORT, () => {
 
 // WebSocket Server Setup
 const wss = new WebSocket.Server({ server });
+
+wss.on('headers', (headers) => {
+  headers.push('Access-Control-Allow-Origin: *');
+});
 const clients = new Set();
 
 wss.on('connection', (ws) => {
