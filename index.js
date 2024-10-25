@@ -28,9 +28,10 @@ connection.once('open', () => {
  
 });
 const ably = new Ably.Realtime('OUOE5g.5cAJog:ZIpMliYO3-Vkuk5zakKhjLTXsyXBIscn3xiNGMS0uw4');
-await ably.connection.once('connected');
+ably.connection.once('connected');
 console.log('Connected to Ably!');
 const channel = ably.channels.get("requests")
+
 const pusher = new Pusher({
   appId: "1885912",
   key: "647fbebaa0649dde95aa",
