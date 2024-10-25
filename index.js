@@ -3,14 +3,21 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const shortid = require('shortid');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
-
+const server = http.createServer(app);
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allow all origins for now (Adjust this in production)
+  }
+});
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -34,6 +41,14 @@ const carSchema = new mongoose.Schema({
 });
 
 const Car = mongoose.model('Car', carSchema);
+io.on('connection', (socket) => {
+  console.log('A user connected');
+
+  // Event for disconnect
+  socket.on('disconnect', () => {
+    console.log('A user disconnected');
+  });
+});
 
 // Routes
 app.get('/api/cars', async (req, res) => {
@@ -99,6 +114,9 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
 
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
+    io.emit('vehicle-requested', { 
+      message: `Vehicle with car number ${car.carNumber} has been requested!` 
+    });
 
     
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
@@ -124,6 +142,9 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
 
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
+    io.emit('vehicle-requested', { 
+      message: `Vehicle with car number ${car.carNumber} has been requested!` 
+    });
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
