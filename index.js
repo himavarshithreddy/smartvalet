@@ -153,6 +153,11 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
     res.status(500).json({ message: 'Error requesting the vehicle', error: error.message });
   }
 });
+// Route to serve the updates page
+app.get('/updates', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'test_pusher.html'));
+});
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
