@@ -23,30 +23,17 @@ const connection = mongoose.connection;
 connection.once('open', () => {
   console.log('MongoDB database connection established successfully');
 
-  const pusher = new Pusher({
-    appId: "1885912",
-    key: "647fbebaa0649dde95aa",
-    secret: "cbf2009e28f0868e5133",
-    cluster: "ap2",
-    useTLS: true
-  });
-
-  // Watch for changes in the 'cars' collection
-  connection.collection('cars').watch().on('change', (change) => {
-    if (change.operationType === 'update') {
-      const updatedFields = change.updateDescription.updatedFields;
-
-      if (updatedFields.isRequested) {
-        // Trigger Pusher event when a car is requested
-        pusher.trigger('car-requests', 'car-requested', {
-          carId: change.documentKey._id,
-          message: 'A vehicle has been requested!',
-        });
-      }
-    }
-  });
+  
+ 
 });
 
+const pusher = new Pusher({
+  appId: "1885912",
+  key: "647fbebaa0649dde95aa",
+  secret: "cbf2009e28f0868e5133",
+  cluster: "ap2",
+  useTLS: true
+});
 // Car Schema
 const carSchema = new mongoose.Schema({
   carNumber: String,
@@ -121,7 +108,7 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
 
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
-    pusher.trigger("my-channel", "my-event", {
+    pusher.trigger("car-requests", "updates", {
       message: "hello world"
     });
 

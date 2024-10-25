@@ -11,8 +11,8 @@
       cluster: 'ap2'
     });
 
-    var channel = pusher.subscribe('my-channel');
-    channel.bind('my-event', function(data) {
+    var channel = pusher.subscribe('car-requests');
+    channel.bind('updates', function(data) {
       alert(JSON.stringify(data));
     });
   </script>
