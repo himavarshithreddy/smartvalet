@@ -1,53 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicle Request Updates</title>
-    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        h1 {
-            text-align: center;
-        }
-        #updates {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-        }
-        .update {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-    </style>
+  <title>Pusher Test</title>
+  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+  <script>
+
+    // Enable pusher logging - don't include this in production
+    Pusher.logToConsole = true;
+
+    var pusher = new Pusher('647fbebaa0649dde95aa', {
+      cluster: 'ap2'
+    });
+
+    var channel = pusher.subscribe('my-channel');
+    channel.bind('my-event', function(data) {
+      alert(JSON.stringify(data));
+    });
+  </script>
 </head>
 <body>
-    <h1>Vehicle Request Updates</h1>
-    <div id="updates"></div>
-
-    <script>
-        // Initialize Pusher
-        const pusher = new Pusher("647fbebaa0649dde95aa", {
-            cluster: "ap2",
-        });
-
-        // Subscribe to the channel
-        const channel = pusher.subscribe('car-requests');
-
-        // Bind to the event
-        channel.bind('car-requested', function(data) {
-            const updatesDiv = document.getElementById('updates');
-            const updateMessage = document.createElement('div');
-            updateMessage.className = 'update';
-            updateMessage.textContent = data.message + " (Car ID: " + data.carId + ")";
-            updatesDiv.prepend(updateMessage); // Prepend to show the latest updates first
-        });
-    </script>
+  <h1>Pusher Test</h1>
+  <p>
+    Try publishing an event to channel <code>my-channel</code>
+    with event name <code>my-event</code>.
+  </p>
 </body>
-</html>
