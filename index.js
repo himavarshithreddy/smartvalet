@@ -3,21 +3,43 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const shortid = require('shortid');
 const path = require('path');
-const http = require('http');
-const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
-const server = http.createServer(app);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-const io = new Server(server, {
-  cors: {
-    origin: "*", // Allow all origins for now (Adjust this in production)
-  }
+
+// Store connected SSE clients
+const sseClients = new Set();
+
+// SSE endpoint for real-time updates
+app.get('/api/events', (req, res) => {
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  // Send initial connection successful message
+  res.write('data: {"type": "connected"}\n\n');
+
+  // Add this client to our Set of connected clients
+  sseClients.add(res);
+
+  // Remove client when they disconnect
+  req.on('close', () => {
+    sseClients.delete(res);
+  });
 });
+
+// Helper function to send updates to all connected clients
+const sendSSEUpdate = (data) => {
+  sseClients.forEach(client => {
+    client.write(`data: ${JSON.stringify(data)}\n\n`);
+  });
+};
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -36,19 +58,11 @@ const carSchema = new mongoose.Schema({
   phoneNumber: String,
   isDelivered: { type: Boolean, default: false },
   isRequested: { type: Boolean, default: false },
-  shortCode: String, // Store only the short code
+  shortCode: String,
   createdAt: { type: Date, default: Date.now },
 });
 
 const Car = mongoose.model('Car', carSchema);
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  // Event for disconnect
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
-  });
-});
 
 // Routes
 app.get('/api/cars', async (req, res) => {
@@ -64,15 +78,10 @@ app.post('/api/generate-link/:carId', async (req, res) => {
   try {
     const carId = req.params.carId;
     const { phoneNumber } = req.body;
-
-    // Generate a short unique identifier
     const shortCode = shortid.generate();
-    
-    // Create the full URL for the car request
     const baseUrl = process.env.BASE_URL || 'https://smartvalet.vercel.app';
     const requestLink = `${baseUrl}/request?code=${shortCode}`;
 
-    // Update the car document with the short link
     await Car.findByIdAndUpdate(carId, {
       shortCode: shortCode,
       phoneNumber: phoneNumber
@@ -87,12 +96,21 @@ app.post('/api/generate-link/:carId', async (req, res) => {
 app.post('/api/mark-delivered/:carId', async (req, res) => {
   try {
     const carId = req.params.carId;
-    await Car.findByIdAndUpdate(carId, { isDelivered: true });
+    const car = await Car.findByIdAndUpdate(carId, { isDelivered: true }, { new: true });
+    
+    // Send SSE update for delivery
+    sendSSEUpdate({
+      type: 'car_delivered',
+      carNumber: car.carNumber,
+      carId: car._id
+    });
+    
     res.json({ message: 'Car marked as delivered successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error marking car as delivered', error: error.message });
   }
 });
+
 app.get('/api/cars/:shortCode', async (req, res) => {
   try {
     const car = await Car.findOne({ shortCode: req.params.shortCode });
@@ -113,24 +131,34 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
     }
 
     // Update the car status to "requested"
-    await Car.findByIdAndUpdate(car._id, { isRequested: true });
-    io.emit('vehicle-requested', { 
-      message: `Vehicle with car number ${car.carNumber} has been requested!` 
+    const updatedCar = await Car.findByIdAndUpdate(
+      car._id, 
+      { isRequested: true },
+      { new: true }
+    );
+
+    // Send SSE update for car request
+    sendSSEUpdate({
+      type: 'car_requested',
+      carNumber: updatedCar.carNumber,
+      carId: updatedCar._id,
+      shortCode: updatedCar.shortCode
     });
 
-    
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
     res.status(500).json({ message: 'Error requesting the vehicle', error: error.message });
   }
 });
-// Route to serve the request vehicle page
+
 app.get('/request', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'request_vehicle.html'));
 });
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
+
 app.post('/api/request-vehicle-by-number', async (req, res) => {
   try {
     const { carNumber } = req.body;
@@ -141,9 +169,17 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
     }
 
     // Update the car status to "requested"
-    await Car.findByIdAndUpdate(car._id, { isRequested: true });
-    io.emit('vehicle-requested', { 
-      message: `Vehicle with car number ${car.carNumber} has been requested!` 
+    const updatedCar = await Car.findByIdAndUpdate(
+      car._id, 
+      { isRequested: true },
+      { new: true }
+    );
+
+    // Send SSE update for car request
+    sendSSEUpdate({
+      type: 'car_requested',
+      carNumber: updatedCar.carNumber,
+      carId: updatedCar._id
     });
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
@@ -152,8 +188,6 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
   }
 });
 
-
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy' });
 });
