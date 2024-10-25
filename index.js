@@ -9,17 +9,9 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Type']
-}));
 app.use(express.json());
 app.use(express.static('public'));
 
-// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -42,36 +34,6 @@ const carSchema = new mongoose.Schema({
 });
 
 const Car = mongoose.model('Car', carSchema);
-
-// Store connected SSE clients
-let sseClients = [];
-
-// SSE Route: Keeps the connection open to send updates
-app.get('/api/events', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  const clientId = Date.now();
-  const newClient = { id: clientId, res };
-  sseClients.push(newClient);
-
-  console.log(`Client connected: ${clientId}`);
-
-  // Remove client when connection is closed
-  req.on('close', () => {
-    console.log(`Client disconnected: ${clientId}`);
-    sseClients = sseClients.filter(client => client.id !== clientId);
-  });
-});
-
-// Helper function to send SSE messages
-const sendSSEMessage = (message) => {
-  sseClients.forEach(client =>
-    client.res.write(`data: ${JSON.stringify(message)}\n\n`)
-  );
-};
 
 // Routes
 app.get('/api/cars', async (req, res) => {
@@ -116,7 +78,6 @@ app.post('/api/mark-delivered/:carId', async (req, res) => {
     res.status(500).json({ message: 'Error marking car as delivered', error: error.message });
   }
 });
-
 app.get('/api/cars/:shortCode', async (req, res) => {
   try {
     const car = await Car.findOne({ shortCode: req.params.shortCode });
@@ -139,24 +100,19 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
 
-    // Notify all SSE clients about the car request
-    sendSSEMessage({ message: `Vehicle ${car.carNumber} has been requested!` });
-
+    
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
     res.status(500).json({ message: 'Error requesting the vehicle', error: error.message });
   }
 });
-
 // Route to serve the request vehicle page
 app.get('/request', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'request_vehicle.html'));
 });
-
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
-
 app.post('/api/request-vehicle-by-number', async (req, res) => {
   try {
     const { carNumber } = req.body;
@@ -169,24 +125,18 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
 
-    // Notify all SSE clients about the car request
-    sendSSEMessage({ message: `Vehicle ${car.carNumber} has been requested!` });
-
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
     res.status(500).json({ message: 'Error requesting the vehicle', error: error.message });
   }
 });
-app.get('/sse-test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'sse-test.html'));
-});
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy' });
 });
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
