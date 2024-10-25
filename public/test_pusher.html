@@ -11,7 +11,7 @@
     // Enable pusher logging - don't include this in production
     Pusher.logToConsole = true;
     const ablychannel= ably.channels.get('requests');
-    await channel.subscribe('greeting', (message) => {
+     channel.subscribe('greeting', (message) => {
   console.log('Received a greeting message in realtime: ' + message.data)
 });
 
