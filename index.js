@@ -12,35 +12,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Store connected SSE clients
-const sseClients = new Set();
-
-// SSE endpoint for real-time updates
-app.get('/api/events', (req, res) => {
-  // Set headers for SSE
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  // Send initial connection successful message
-  res.write('data: {"type": "connected"}\n\n');
-
-  // Add this client to our Set of connected clients
-  sseClients.add(res);
-
-  // Remove client when they disconnect
-  req.on('close', () => {
-    sseClients.delete(res);
-  });
-});
-
-// Helper function to send updates to all connected clients
-const sendSSEUpdate = (data) => {
-  sseClients.forEach(client => {
-    client.write(`data: ${JSON.stringify(data)}\n\n`);
-  });
-};
-
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -58,11 +30,41 @@ const carSchema = new mongoose.Schema({
   phoneNumber: String,
   isDelivered: { type: Boolean, default: false },
   isRequested: { type: Boolean, default: false },
-  shortCode: String,
+  shortCode: String, // Store only the short code
   createdAt: { type: Date, default: Date.now },
 });
 
 const Car = mongoose.model('Car', carSchema);
+
+// Store connected SSE clients
+let sseClients = [];
+
+// SSE Route: Keeps the connection open to send updates
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const clientId = Date.now();
+  const newClient = { id: clientId, res };
+  sseClients.push(newClient);
+
+  console.log(`Client connected: ${clientId}`);
+
+  // Remove client when connection is closed
+  req.on('close', () => {
+    console.log(`Client disconnected: ${clientId}`);
+    sseClients = sseClients.filter(client => client.id !== clientId);
+  });
+});
+
+// Helper function to send SSE messages
+const sendSSEMessage = (message) => {
+  sseClients.forEach(client =>
+    client.res.write(`data: ${JSON.stringify(message)}\n\n`)
+  );
+};
 
 // Routes
 app.get('/api/cars', async (req, res) => {
@@ -78,10 +80,15 @@ app.post('/api/generate-link/:carId', async (req, res) => {
   try {
     const carId = req.params.carId;
     const { phoneNumber } = req.body;
+
+    // Generate a short unique identifier
     const shortCode = shortid.generate();
+    
+    // Create the full URL for the car request
     const baseUrl = process.env.BASE_URL || 'https://smartvalet.vercel.app';
     const requestLink = `${baseUrl}/request?code=${shortCode}`;
 
+    // Update the car document with the short link
     await Car.findByIdAndUpdate(carId, {
       shortCode: shortCode,
       phoneNumber: phoneNumber
@@ -96,15 +103,7 @@ app.post('/api/generate-link/:carId', async (req, res) => {
 app.post('/api/mark-delivered/:carId', async (req, res) => {
   try {
     const carId = req.params.carId;
-    const car = await Car.findByIdAndUpdate(carId, { isDelivered: true }, { new: true });
-    
-    // Send SSE update for delivery
-    sendSSEUpdate({
-      type: 'car_delivered',
-      carNumber: car.carNumber,
-      carId: car._id
-    });
-    
+    await Car.findByIdAndUpdate(carId, { isDelivered: true });
     res.json({ message: 'Car marked as delivered successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error marking car as delivered', error: error.message });
@@ -131,19 +130,10 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
     }
 
     // Update the car status to "requested"
-    const updatedCar = await Car.findByIdAndUpdate(
-      car._id, 
-      { isRequested: true },
-      { new: true }
-    );
+    await Car.findByIdAndUpdate(car._id, { isRequested: true });
 
-    // Send SSE update for car request
-    sendSSEUpdate({
-      type: 'car_requested',
-      carNumber: updatedCar.carNumber,
-      carId: updatedCar._id,
-      shortCode: updatedCar.shortCode
-    });
+    // Notify all SSE clients about the car request
+    sendSSEMessage({ message: `Vehicle ${car.carNumber} has been requested!` });
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
@@ -151,6 +141,7 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
   }
 });
 
+// Route to serve the request vehicle page
 app.get('/request', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'request_vehicle.html'));
 });
@@ -169,18 +160,10 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
     }
 
     // Update the car status to "requested"
-    const updatedCar = await Car.findByIdAndUpdate(
-      car._id, 
-      { isRequested: true },
-      { new: true }
-    );
+    await Car.findByIdAndUpdate(car._id, { isRequested: true });
 
-    // Send SSE update for car request
-    sendSSEUpdate({
-      type: 'car_requested',
-      carNumber: updatedCar.carNumber,
-      carId: updatedCar._id
-    });
+    // Notify all SSE clients about the car request
+    sendSSEMessage({ message: `Vehicle ${car.carNumber} has been requested!` });
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
@@ -188,13 +171,15 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
   }
 });
 app.get('/sse-test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'sse-test.html'));
+  res.sendFile(path.join(__dirname, 'public', 'sse_test.html'));
 });
 
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy' });
 });
 
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
