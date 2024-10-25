@@ -107,10 +107,25 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
     }
 
     // Update the car status to "requested"
-    await Car.findByIdAndUpdate(car._id, { isRequested: true });
-    pusher.trigger("car-requests", "updates", {
-      message: "hello world"
-    });
+     const updatedCar = await Car.findByIdAndUpdate(
+      car._id, 
+      { isRequested: true },
+      { new: true }  // Return the updated document
+    );
+
+    // Trigger Pusher event with meaningful data
+    try {
+      await pusher.trigger("car-requests", "car-requested", {
+        carId: updatedCar._id,
+        carNumber: updatedCar.carNumber,
+        requestTime: new Date(),
+        status: "requested",
+        message: `Vehicle ${updatedCar.carNumber} has been requested for pickup`
+      });
+    } catch (pusherError) {
+      console.error('Pusher notification failed:', pusherError);
+      // Continue with the response even if Pusher fails
+    }
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
@@ -135,10 +150,26 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
     }
 
     // Update the car status to "requested"
-    await Car.findByIdAndUpdate(car._id, { isRequested: true });
-    await pusher.trigger("car-requests", "updates", {
-        message: "hello world"
+     const updatedCar = await Car.findByIdAndUpdate(
+      car._id, 
+      { isRequested: true },
+      { new: true }  // Return the updated document
+    );
+
+    // Trigger Pusher event with meaningful data
+    try {
+      await pusher.trigger("car-requests", "car-requested", {
+        carId: updatedCar._id,
+        carNumber: updatedCar.carNumber,
+        requestTime: new Date(),
+        status: "requested",
+        message: `Vehicle ${updatedCar.carNumber} has been requested for pickup`
       });
+    } catch (pusherError) {
+      console.error('Pusher notification failed:', pusherError);
+      // Continue with the response even if Pusher fails
+    }
+
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
