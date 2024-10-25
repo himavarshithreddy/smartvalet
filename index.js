@@ -136,9 +136,9 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
 
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
-    pusher.trigger("car-requests", "updates", {
-      message: "hello world"
-    });
+    await pusher.trigger("car-requests", "updates", {
+        message: "hello world"
+      });
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
