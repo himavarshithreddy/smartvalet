@@ -187,6 +187,9 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
     res.status(500).json({ message: 'Error requesting the vehicle', error: error.message });
   }
 });
+app.get('/sse-test', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sse-test.html'));
+});
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy' });
