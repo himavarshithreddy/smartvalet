@@ -171,7 +171,7 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
   }
 });
 app.get('/sse-test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'sse_test.html'));
+  res.sendFile(path.join(__dirname, 'public', 'sse-test.html'));
 });
 
 // Health check endpoint
