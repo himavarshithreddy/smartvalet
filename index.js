@@ -116,7 +116,7 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
     // Trigger Pusher event with meaningful data
     try {
       await pusher.trigger("car-requests", "car-requested", {
-        car_number: 'MH12AB1234'
+        car_number: updatedCar.carNumber
       });
     } catch (pusherError) {
       console.error('Pusher notification failed:', pusherError);
@@ -155,7 +155,7 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
     // Trigger Pusher event with meaningful data
     try {
       await pusher.trigger("car-requests", "car-requested", {
-        car_number: 'MH12AB1234'
+        car_number: updatedCar.carNumber
       });
     } catch (pusherError) {
       console.error('Pusher notification failed:', pusherError);
