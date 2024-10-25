@@ -3,7 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const shortid = require('shortid');
 const path = require('path');
-const Pusher = require('pusher'); // Import Pusher
+const Pusher = require("pusher"); // Import Pusher
 require('dotenv').config();
 
 const app = express();
@@ -23,13 +23,12 @@ const connection = mongoose.connection;
 connection.once('open', () => {
   console.log('MongoDB database connection established successfully');
 
-  // Initialize Pusher after the connection is established
   const pusher = new Pusher({
-    appId: "1885912",  // Replace with your Pusher App ID
-    key: "647fbebaa0649dde95aa",        // Replace with your Pusher Key
-    secret: "cbf2009e28f0868e5133",  // Replace with your Pusher Secret
-    cluster: "ap2", // Replace with your Pusher Cluster
-    useTLS: true,
+    appId: "1885912",
+    key: "647fbebaa0649dde95aa",
+    secret: "cbf2009e28f0868e5133",
+    cluster: "ap2",
+    useTLS: true
   });
 
   // Watch for changes in the 'cars' collection
@@ -122,6 +121,9 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
 
     // Update the car status to "requested"
     await Car.findByIdAndUpdate(car._id, { isRequested: true });
+    pusher.trigger("my-channel", "my-event", {
+      message: "hello world"
+    });
 
     res.json({ message: 'Your vehicle request has been submitted successfully!' });
   } catch (error) {
