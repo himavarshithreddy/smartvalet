@@ -5,7 +5,6 @@ const shortid = require('shortid');
 const path = require('path');
 const Pusher = require("pusher"); // Import Pusher
 require('dotenv').config();
-const Ably = require('ably');
 
 const app = express();
 
@@ -27,10 +26,6 @@ connection.once('open', () => {
   
  
 });
-const ably = new Ably.Realtime('OUOE5g.5cAJog:ZIpMliYO3-Vkuk5zakKhjLTXsyXBIscn3xiNGMS0uw4');
-ably.connection.once('connected');
-console.log('Connected to Ably!');
-const channel = ably.channels.get("requests")
 
 const pusher = new Pusher({
   appId: "1885912",
@@ -120,10 +115,6 @@ app.post('/api/request-vehicle/:shortCode', async (req, res) => {
 
     // Trigger Pusher event with meaningful data
     try {
-
-      await channel.publish('greeting', 'hello!');
-
-
       await pusher.trigger("car-requests", "car-requested", {
         car_number: updatedCar.carNumber
       });
@@ -163,7 +154,6 @@ app.post('/api/request-vehicle-by-number', async (req, res) => {
 
     // Trigger Pusher event with meaningful data
     try {
-      await channel.publish('greeting', 'hello!');
       await pusher.trigger("car-requests", "car-requested", {
         car_number: updatedCar.carNumber
       });
