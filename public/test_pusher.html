@@ -2,10 +2,18 @@
 <head>
   <title>Pusher Test</title>
   <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
+<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
+
+
   <script>
 
     // Enable pusher logging - don't include this in production
     Pusher.logToConsole = true;
+    const ablychannel= ably.channels.get('requests');
+    await channel.subscribe('greeting', (message) => {
+  console.log('Received a greeting message in realtime: ' + message.data)
+});
 
     var pusher = new Pusher('647fbebaa0649dde95aa', {
       cluster: 'ap2'
