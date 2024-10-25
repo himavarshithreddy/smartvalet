@@ -130,7 +130,7 @@
         function showMessage(message, type) {
             const messageDiv = document.getElementById('message');
             messageDiv.innerHTML = message;
-            alert("Your request for vehicle number ${vehicleNumber} has been submitted successfully!");
+            alert("Your request for vehicle number " + vehicleNumber + " has been submitted successfully!");
             messageDiv.className = `message ${type}`; // Set the class based on type (success or error)
             messageDiv.style.display = 'block'; // Show the message
         }
